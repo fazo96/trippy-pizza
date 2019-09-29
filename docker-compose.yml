@@ -155,6 +155,17 @@ services:
       - VIRTUAL_HOST=speedtest.${DOMAIN}
       - LETSENCRYPT_HOST=speedtest.${DOMAIN}
       - LETSENCRYPT_EMAIL=${EMAIL}
+  jellyfin:
+    image: jellyfin/jellyfin
+    volumes:
+      - ${DATA}/jellyfin/config:/config
+      - ${DATA}/jellyfin/cache:/cache
+      - ${MEDIA}:/media
+    environment:
+      - VIRTUAL_HOST=media.${DOMAIN}
+      - VIRTUAL_PORT=8096
+      - LETSENCRYPT_HOST=media.${DOMAIN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
 
 volumes:
   conf:

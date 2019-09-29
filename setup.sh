@@ -17,6 +17,9 @@ mkdir -p $DATA/nextcloud/html/
 mkdir -p $DATA/mumble/
 mkdir -p $DATA/minecraft/
 mkdir -p $DATA/bitwarden/
+mkdir -p $DATA/jellyfin/cache
+mkdir -p $DATA/jellyfin/config
+mkdir -p $MEDIA/
 set +x
 
 echo
