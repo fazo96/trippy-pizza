@@ -1,0 +1,134 @@
+version: '2'
+
+services:
+  bitwarden:  
+    image: mprasil/bitwarden
+    restart: always
+    volumes:
+      - ${DATA}/bitwarden:/data/
+    environment:
+      - VIRTUAL_HOST=bitwarden.${DOMAIN}
+      - LETSENCRYPT_HOST=bitwarden.${DOMAIN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
+      - DOMAIN=https://bitwarden.${DOMAIN}
+  filebrowser:  
+    image: filebrowser/filebrowser
+    restart: always
+    volumes:
+      - ./config/filebrowser.json:/.filebrowser.json
+      - ${DATA}/filebrowser/database.db:/database.db
+      - ${DATA}/filebrowser/files:/srv
+    environment:
+      - VIRTUAL_HOST=files.${DOMAIN}
+      - LETSENCRYPT_HOST=files.${DOMAIN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
+  minecraft:  
+    image: itzg/minecraft-server
+    restart: always
+    ports:
+      - 25565:25565
+    volumes:
+      - ${DATA}/minecraft:/data
+    environment:
+      - VERSION=1.14.4
+      - MAX_PLAYERS=5
+      - VIEW_DISTANCE=16
+      - MAX_WORLD_SIZE=10000
+      - PVP=false
+      - "MOTD=Trippy Pizza"
+      - EULA=true
+      - WHITELIST=fazo96,Demi_01,LeonL_13,Tim_C96
+      - OPS=fazo96,Demi_01
+      - MEMORY=4G
+  mumble:
+    image: phlak/mumble
+    restart: always
+    volumes:
+      - ${DATA}/mumble:/etc/mumble
+    ports:
+      - 64738:64738
+      - 64738:64738/udp
+  syncthing:  
+    image: syncthing/syncthing
+    restart: always
+    volumes:
+      - ${DATA}/syncthing/folders:/var/syncthing
+      - ${DATA}/syncthing/config:/var/syncthing/config
+    ports:
+      - 22000:22000
+    environment:
+      - VIRTUAL_HOST=syncthing.${DOMAIN}
+      - VIRTUAL_PORT=8384
+      - LETSENCRYPT_HOST=syncthing.${DOMAIN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
+  nextcloud_db:
+    image: mariadb
+    restart: always
+    volumes:
+      - ${DATA}/nextcloud/mariadb:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=supersecrettrippy
+      - MYSQL_PASSWORD=nextcloud
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+  nextcloud:  
+    image: nextcloud:apache
+    restart: always
+    volumes:
+      - ${DATA}/nextcloud/html:/var/www/html
+    environment:
+      - VIRTUAL_HOST=nextcloud.${DOMAIN}
+      - LETSENCRYPT_HOST=nextcloud.${DOMAIN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
+      - MYSQL_HOST=nextcloud_db
+      - MYSQL_PASSWORD=nextcloud
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+    links:
+      - nextcloud_db
+    depends_on:
+      - nextcloud_db 
+  collabora:  
+    image: collabora/code
+    restart: always
+    expose:
+      - 9980
+    environment:
+      - domain=nextcloud.${DOMAIN}
+      - VIRTUAL_HOST=collabora.${EMAIL}
+      - VIRTUAL_PORT=9980
+      - VIRTUAL_PROTO=https
+      - LETSENCRYPT_HOST=collabora.${DOMAIN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
+    cap_add:
+      - MKNOD
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - conf:/etc/nginx/conf.d
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - dhparam:/etc/nginx/dhparam
+      - certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy"
+  nginx-proxy-https:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    restart: always
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - certs:/etc/nginx/certs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+volumes:
+  conf:
+  vhost:
+  html:
+  dhparam:
+  certs:
