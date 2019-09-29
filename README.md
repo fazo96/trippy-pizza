@@ -1,18 +1,19 @@
 # Trippy Pizza
 
-Trippy Pizza is a scripts and set of configurations as code used to set up a variety of self hosted web
-applications and services. It will power [trippy.pizza](https://trippy.pizza) when ready.
+Trippy Pizza is a set of scripts and configurations as code for running a variety of self hosted web
+applications and services. It powers my "personal cloud", [trippy.pizza](https://trippy.pizza).
 
 ## What's in it
 
 Trippy pizza will automatically set up the following services for you:
 
-- **Syncthing File** Synchronization Tool
+- **Syncthing** File Synchronization Tool
 - **Nextcloud** Personal Cloud solution with Collabora for Office editing
 - **Filebrowser** File manager
 - **Minecraft** server (official version)
 - **Bitwarden** Password Manager (using bitwarden-rs)
 - **Mumble** Voice Chat Server
+- and more!
 
 ## Requirements
 
