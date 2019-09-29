@@ -17,7 +17,7 @@ services:
     volumes:
       - ./config/filebrowser.json:/.filebrowser.json
       - ${DATA}/filebrowser/database.db:/database.db
-      - ${DATA}/filebrowser/files:/srv
+      - ${FILES}:/srv
     environment:
       - VIRTUAL_HOST=files.${DOMAIN}
       - LETSENCRYPT_HOST=files.${DOMAIN}
@@ -166,6 +166,22 @@ services:
       - VIRTUAL_PORT=8096
       - LETSENCRYPT_HOST=media.${DOMAIN}
       - LETSENCRYPT_EMAIL=${EMAIL}
+  transmission:
+    image: linuxserver/transmission
+    volumes:
+      - ${DATA}/transmission/config:/config
+      - ${DOWNLOAD}:/downloads
+    ports:
+      - "51413:51413"
+      - "51413:51413/udp"
+    environment:
+      - VIRTUAL_HOST=transmission.${DOMAIN}
+      - VIRTUAL_PORT=9091
+      - LETSENCRYPT_HOST=transmission.${DOMAIN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
 
 volumes:
   conf:

@@ -19,7 +19,10 @@ mkdir -p $DATA/minecraft/
 mkdir -p $DATA/bitwarden/
 mkdir -p $DATA/jellyfin/cache
 mkdir -p $DATA/jellyfin/config
+mkdir -p $DATA/transmission/config
 mkdir -p $MEDIA/
+mkdir -p $DOWNLOAD/
+mkdir -p $FILES/
 set +x
 
 echo
