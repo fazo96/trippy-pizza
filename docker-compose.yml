@@ -24,7 +24,7 @@ services:
       - LETSENCRYPT_EMAIL=${EMAIL}
   minecraft:  
     image: itzg/minecraft-server
-    restart: always
+    restart: unless-stopped
     ports:
       - 25565:25565
     volumes:
@@ -95,7 +95,7 @@ services:
       - 9980
     environment:
       - domain=nextcloud.${DOMAIN}
-      - VIRTUAL_HOST=collabora.${EMAIL}
+      - VIRTUAL_HOST=collabora.${DOMAIN}
       - VIRTUAL_PORT=9980
       - VIRTUAL_PROTO=https
       - LETSENCRYPT_HOST=collabora.${DOMAIN}
@@ -125,6 +125,36 @@ services:
     volumes:
       - certs:/etc/nginx/certs:rw
       - /var/run/docker.sock:/var/run/docker.sock:ro
+  heimdall:
+    image: linuxserver/heimdall
+    restart: always
+    volumes:
+      - ${DATA}/heimdall:/config
+    environment:
+      - VIRTUAL_HOST=${DOMAIN}
+      - LETSENCRYPT_HOST=${DOMAIN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
+  portainer:
+    image: portainer/portainer
+    command: -H unix:///var/run/docker.sock
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DATA}/portainer:/data
+    environment:
+      - VIRTUAL_HOST=portainer.${DOMAIN}
+      - VIRTUAL_PORT=9000
+      - LETSENCRYPT_HOST=portainer.${DOMAIN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
+  speedtest:
+    image: adolfintel/speedtest
+    environment:
+      - VIRTUAL_HOST=speedtest.${DOMAIN}
+      - LETSENCRYPT_HOST=speedtest.${DOMAIN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
 
 volumes:
   conf:
