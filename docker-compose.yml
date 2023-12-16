@@ -1,192 +1,247 @@
-version: '2'
+version: '3.4'
 
 services:
   bitwarden:  
-    image: mprasil/bitwarden
+    image: vaultwarden/server:latest
     restart: always
+    ports:
+      - 8002:80
     volumes:
       - ${DATA}/bitwarden:/data/
     environment:
-      - VIRTUAL_HOST=bitwarden.${DOMAIN}
-      - LETSENCRYPT_HOST=bitwarden.${DOMAIN}
-      - LETSENCRYPT_EMAIL=${EMAIL}
       - DOMAIN=https://bitwarden.${DOMAIN}
-  filebrowser:  
-    image: filebrowser/filebrowser
-    restart: always
-    volumes:
-      - ./config/filebrowser.json:/.filebrowser.json
-      - ${DATA}/filebrowser/database.db:/database.db
-      - ${FILES}:/srv
-    environment:
-      - VIRTUAL_HOST=files.${DOMAIN}
-      - LETSENCRYPT_HOST=files.${DOMAIN}
-      - LETSENCRYPT_EMAIL=${EMAIL}
-  minecraft:  
-    image: itzg/minecraft-server
-    restart: unless-stopped
-    ports:
-      - 25565:25565
-    volumes:
-      - ${DATA}/minecraft:/data
-    environment:
-      - VERSION=1.14.4
-      - MAX_PLAYERS=5
-      - VIEW_DISTANCE=16
-      - MAX_WORLD_SIZE=10000
-      - PVP=false
-      - "MOTD=Trippy Pizza"
-      - EULA=true
-      - WHITELIST=fazo96,Demi_01,LeonL_13,Tim_C96
-      - OPS=fazo96,Demi_01
-      - MEMORY=4G
-  mumble:
-    image: phlak/mumble
-    restart: always
-    volumes:
-      - ${DATA}/mumble:/etc/mumble
-    ports:
-      - 64738:64738
-      - 64738:64738/udp
   syncthing:  
-    image: syncthing/syncthing
+    image: linuxserver/syncthing:amd64-latest
     restart: always
     volumes:
-      - ${DATA}/syncthing/folders:/var/syncthing
-      - ${DATA}/syncthing/config:/var/syncthing/config
+      - ${DATA}/syncthing/folders:/folders
+      - ${DATA}/syncthing/config:/config
     ports:
       - 22000:22000
+      - 8003:8384
     environment:
-      - VIRTUAL_HOST=syncthing.${DOMAIN}
-      - VIRTUAL_PORT=8384
-      - LETSENCRYPT_HOST=syncthing.${DOMAIN}
-      - LETSENCRYPT_EMAIL=${EMAIL}
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
   nextcloud_db:
-    image: mariadb
+    image: postgres:12
     restart: always
     volumes:
-      - ${DATA}/nextcloud/mariadb:/var/lib/mysql
+      - ${DATA}/nextcloud/postgresql/data:/var/lib/postgresql/data
     environment:
-      - MYSQL_ROOT_PASSWORD=supersecrettrippy
-      - MYSQL_PASSWORD=nextcloud
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
+      - POSTGRES_PASSWORD=nextcloud
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
   nextcloud:  
     image: nextcloud:apache
     restart: always
     volumes:
       - ${DATA}/nextcloud/html:/var/www/html
+    ports:
+      - 8001:80
     environment:
-      - VIRTUAL_HOST=nextcloud.${DOMAIN}
-      - LETSENCRYPT_HOST=nextcloud.${DOMAIN}
-      - LETSENCRYPT_EMAIL=${EMAIL}
-      - MYSQL_HOST=nextcloud_db
-      - MYSQL_PASSWORD=nextcloud
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
+      - POSTGRES_HOST=nextcloud_db
+      - POSTGRES_PASSWORD=nextcloud
+      - POSTGRES_DATABASE=nextcloud
+      - POSTGRES_USER=nextcloud
+      - OVERWRITEPROTOCOL=https
     links:
       - nextcloud_db
     depends_on:
       - nextcloud_db 
-  collabora:  
-    image: collabora/code
-    restart: always
-    expose:
-      - 9980
-    environment:
-      - domain=nextcloud.${DOMAIN}
-      - VIRTUAL_HOST=collabora.${DOMAIN}
-      - VIRTUAL_PORT=9980
-      - VIRTUAL_PROTO=https
-      - LETSENCRYPT_HOST=collabora.${DOMAIN}
-      - LETSENCRYPT_EMAIL=${EMAIL}
-    cap_add:
-      - MKNOD
-  nginx-proxy:
-    image: jwilder/nginx-proxy
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - conf:/etc/nginx/conf.d
-      - ./config/proxy.conf:/etc/nginx/conf.d/proxy.conf:ro
-      - vhost:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-      - dhparam:/etc/nginx/dhparam
-      - certs:/etc/nginx/certs:ro
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-    labels:
-      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy"
-  nginx-proxy-https:
-    image: jrcs/letsencrypt-nginx-proxy-companion
-    restart: always
-    volumes_from:
-      - nginx-proxy
-    volumes:
-      - certs:/etc/nginx/certs:rw
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-  heimdall:
-    image: linuxserver/heimdall
-    restart: always
-    volumes:
-      - ${DATA}/heimdall:/config
-    environment:
-      - VIRTUAL_HOST=${DOMAIN}
-      - LETSENCRYPT_HOST=${DOMAIN}
-      - LETSENCRYPT_EMAIL=${EMAIL}
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Rome
-  portainer:
-    image: portainer/portainer
-    command: -H unix:///var/run/docker.sock
-    restart: always
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ${DATA}/portainer:/data
-    environment:
-      - VIRTUAL_HOST=portainer.${DOMAIN}
-      - VIRTUAL_PORT=9000
-      - LETSENCRYPT_HOST=portainer.${DOMAIN}
-      - LETSENCRYPT_EMAIL=${EMAIL}
-  speedtest:
-    image: adolfintel/speedtest
-    environment:
-      - VIRTUAL_HOST=speedtest.${DOMAIN}
-      - LETSENCRYPT_HOST=speedtest.${DOMAIN}
-      - LETSENCRYPT_EMAIL=${EMAIL}
-  jellyfin:
-    image: jellyfin/jellyfin
-    volumes:
-      - ${DATA}/jellyfin/config:/config
-      - ${DATA}/jellyfin/cache:/cache
-      - ${MEDIA}:/media
-    environment:
-      - VIRTUAL_HOST=media.${DOMAIN}
-      - VIRTUAL_PORT=8096
-      - LETSENCRYPT_HOST=media.${DOMAIN}
-      - LETSENCRYPT_EMAIL=${EMAIL}
   transmission:
     image: linuxserver/transmission
+    restart: always
     volumes:
       - ${DATA}/transmission/config:/config
       - ${DOWNLOAD}:/downloads
     ports:
+      - 8004:9091
       - "51413:51413"
       - "51413:51413/udp"
     environment:
-      - VIRTUAL_HOST=transmission.${DOMAIN}
-      - VIRTUAL_PORT=9091
-      - LETSENCRYPT_HOST=transmission.${DOMAIN}
-      - LETSENCRYPT_EMAIL=${EMAIL}
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Rome
+  filebrowser:
+    image: filebrowser/filebrowser
+    user: 1000:1000
+    ports:
+      - 8005:8000
+    volumes:
+      - ${DATA}/filebrowser/config.json:/.filebrowser.json
+      - ${DATA}/filebrowser/database.db:/database.db
+      - ${FILES}:/srv
+  hass:
+    image: homeassistant/home-assistant:stable
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - ${DATA}/hass/config:/config
+    network_mode: host
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+# valheim:
+#   image: lloesche/valheim-server
+#   restart: always
+#   stop_grace_period: 2m
+#   cap_add:
+#     - sys_nice
+#   volumes:
+#     - ${DATA}/valheim/config:/config
+#     - ${DATA}/valheim/data:/opt/valheim
+#   ports: 
+#     - "2456-2457:2456-2457/udp"
+#     - "9001:9001/tcp"
+#   environment:
+#     - SERVER_NAME=Trippy Pizza
+#     - WORLD_NAME=Primo
+#     - SERVER_PASS=amogus
+#     - SERVER_PUBLIC=false
+  libreddit:
+    image: libreddit/libreddit
+    restart: always
+    ports:
+      - 8006:8080
+# minecraft:
+#   image: itzg/minecraft-server
+#   ports:
+#     - "25565:25565"
+#     - "19132:19132/udp"
+#   restart: always
+#   environment:
+#     EULA: "TRUE"
+#     MEMORY: "3G"
+#     VIEW_DISTANCE: 15
+#     OPS: fazo96
+#     MOTD: "Trippy Pizza"
+#     TYPE: Fabric
+#   volumes:
+#     - ${DATA}/minecraft/data:/data
+#     - ${DATA}/minecraft/mods:/mods
+  foodiepad:
+    build: ../foodiepad
+    ports:
+      - "3000:3000"
+    restart: always
+#  barotrauma:
+#    image: goldfish92/barotrauma-dedicated-server
+#    ports:
+#      - "27015-27016:27015-27016/udp"
+#    volumes:
+#      - ${DATA}/barotrauma/saves:/home/steam/.local/share/Daedalic Entertainment GmbH/Barotrauma/Multiplayer
+#    environment:
+#      - BAR_PASSWORD=amogus
+#      - BAR_NAME=Sottomarigno
+#      - BAR_PERMISSIONS=Fazo:76561198001126658:All
+#      # More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    # For DHCP it is recommended to remove these ports and instead add: network_mode: "host"
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    # - "67:67/udp" # Only required if you are using Pi-hole as your DHCP server
+      - "8007:80/tcp"
+    environment:
+      TZ: 'Europe/Rome'
+      WEBPASSWORD: 'n0suchp4ssw0rd'
+      VIRTUAL_HOST: 'pihole.trippy.pizza'
+    volumes:
+      - '${DATA}/pihole/etc-pihole:/etc/pihole'
+      - '${DATA}/pihole/etc-dnsmasq.d:/etc/dnsmasq.d'
+   # https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+   # cap_add:
+   #  - NET_ADMIN # Required if you are using Pi-hole as your DHCP server, else not needed
+    restart: always
+  lemmy-proxy:
+    image: nginx:1-alpine
+    ports:
+      # only ports facing any connection from outside
+      - 8008:80
+    volumes:
+      - ./config/lemmy/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: always
+    depends_on:
+      - pictrs
+      - lemmy-ui
+      - lemmy
 
-volumes:
-  conf:
-  vhost:
-  html:
-  dhparam:
-  certs:
+  lemmy:
+    image: dessalines/lemmy:0.19.0
+    hostname: lemmy
+    restart: always
+    environment:
+      - RUST_LOG="warn,lemmy_server=info,lemmy_api=info,lemmy_api_common=info,lemmy_api_crud=info,lemmy_apub=info,lemmy_db_schema=info,lemmy_db_views=info,lemmy_db_views_actor=info,lemmy_db_views_moderator=info,lemmy_routes=info,lemmy_utils=info,lemmy_websocket=info"
+    volumes:
+      - ./config/lemmy/lemmy.hjson:/config/config.hjson
+    depends_on:
+      - lemmy-postgres
+      - pictrs
+
+  lemmy-ui:
+    image: dessalines/lemmy-ui:0.19.0
+    environment:
+      # this needs to match the hostname defined in the lemmy service
+      - LEMMY_UI_LEMMY_INTERNAL_HOST=lemmy:8536
+      # set the outside hostname here
+      - LEMMY_UI_LEMMY_EXTERNAL_HOST=lemmy.trippy.pizza:443
+      - LEMMY_HTTPS=true
+    depends_on:
+      - lemmy
+    restart: always
+
+  pictrs:
+    image: asonix/pictrs:0.3.1
+    # this needs to match the pictrs url in lemmy.hjson
+    hostname: pictrs
+    # we can set options to pictrs like this, here we set max. image size and forced format for conversion
+    # entrypoint: /sbin/tini -- /usr/local/bin/pict-rs -p /mnt -m 4 --image-format webp
+    environment:
+      - PICTRS__API_KEY=API_KEY
+    user: 991:991
+    volumes:
+      - ${DATA}/pictrs:/mnt
+    restart: always
+
+  lemmy-postgres:
+    image: postgres:15-alpine
+    # this needs to match the database host in lemmy.hson
+    hostname: postgres
+    environment:
+      - POSTGRES_USER=lemmy
+      - POSTGRES_PASSWORD=lemmy
+      - POSTGRES_DB=lemmy
+    volumes:
+      - ${DATA}/lemmy/postgres:/var/lib/postgresql/data
+    restart: always
+
+  dendrite-postgres:
+    image: postgres:15-alpine
+    restart: always
+    volumes:
+      - ${DATA}/dendrite/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: itsasecret
+      POSTGRES_USER: dendrite
+      POSTGRES_DATABASE: dendrite
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dendrite"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  dendrite:
+    image: matrixdotorg/dendrite-monolith:latest
+    ports:
+      - 8010:8008
+      - 8448:8448
+    volumes:
+      - ${DATA}/dendrite/config:/etc/dendrite
+      - ${DATA}/dendrite/media:/var/dendrite/media
+      - ${DATA}/dendrite/jetstream:/var/dendrite/jetstream
+      - ${DATA}/dendrite/search_index:/var/dendrite/searchindex
+    depends_on:
+      - dendrite-postgres
+    restart: unless-stopped
