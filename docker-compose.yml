@@ -169,7 +169,7 @@ services:
       - lemmy
 
   lemmy:
-    image: dessalines/lemmy:0.19.0
+    image: dessalines/lemmy:0.19.3
     hostname: lemmy
     restart: always
     environment:
@@ -181,7 +181,7 @@ services:
       - pictrs
 
   lemmy-ui:
-    image: dessalines/lemmy-ui:0.19.0
+    image: dessalines/lemmy-ui:0.19.3
     environment:
       # this needs to match the hostname defined in the lemmy service
       - LEMMY_UI_LEMMY_INTERNAL_HOST=lemmy:8536
@@ -245,3 +245,32 @@ services:
     depends_on:
       - dendrite-postgres
     restart: unless-stopped
+
+  calibre-web:
+    image: linuxserver/calibre-web:latest
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - DOCKER_MODS=linuxserver/mods:universal-calibre
+      - OAUTHLIB_RELAX_TOKEN_SCOPE=1
+    volumes:
+      - /${DATA}/calibre-web/config:/config
+      - /${DATA}/calibre-web/library:/books
+    ports:
+      - 8083:8083
+    restart: unless-stopped
+  firefox-sync-server:
+    image: mozilla/syncserver:latest
+    volumes:
+        - ${DATA}/firefox-sync-server:/data
+    ports:
+        - 8084:8084
+    environment:
+        SYNCSERVER_PUBLIC_URL: 'https://firefoxsyncserver.trippy.pizza'
+        SYNCSERVER_SECRET: 'n0suchp4ssw0rd'
+        SYNCSERVER_SQLURI: 'sqlite:////data/syncserver.db'
+        SYNCSERVER_BATCH_UPLOAD_ENABLED: 'true'
+        SYNCSERVER_FORCE_WSGI_ENVIRON: 'true'
+        PORT: '8084'
+    restart: always
