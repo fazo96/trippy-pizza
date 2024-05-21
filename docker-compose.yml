@@ -98,11 +98,6 @@ services:
 #     - WORLD_NAME=Primo
 #     - SERVER_PASS=amogus
 #     - SERVER_PUBLIC=false
-  libreddit:
-    image: quay.io/redlib/redlib:latest
-    restart: always
-    ports:
-      - 8006:8080
 # minecraft:
 #   image: itzg/minecraft-server
 #   ports:
