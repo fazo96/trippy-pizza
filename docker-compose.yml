@@ -99,7 +99,7 @@ services:
 #     - SERVER_PASS=amogus
 #     - SERVER_PUBLIC=false
   libreddit:
-    image: libreddit/libreddit
+    image: quay.io/redlib/redlib:latest
     restart: always
     ports:
       - 8006:8080
